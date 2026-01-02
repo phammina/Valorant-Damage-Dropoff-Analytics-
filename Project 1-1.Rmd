@@ -1,0 +1,123 @@
+---
+title: "Project 1"
+author: "Mina Pham"
+date: "2024-10-20"
+output: bookdown::pdf_document2
+bibliography: project1.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+val <- read.csv('valorant-stats.csv')
+
+```
+
+# Abstract
+This study aims to provide insight on the importance of firearms in _Valorant_, a tactical first-person shooter developed by Riot Games. With economy being a big factor in the strategic aspect of the game, each weapon has unique attributes including fire rate, wall penetration, magazine capacity, and damage to different parts of the body from various distances. The data in this study explores how the different types of weapons influence these various attributes.  
+
+# Introduction
+_Valorant_ was released by Riot Games in 2020 and to this day has made a name for itself as one of the most prominent tactical first-person shooters in recent times. Because I personally have a lot of hours in this game, it is a topic I am quite passionate about and am actually curious to explore. In the context of this Project, I want to go into detail about the specifics of all the different guns in the game. The goal of the game is to reach 13 rounds first, and firearm buyouts can be the turning point in the success of a round. Understanding how weapons function within the game’s economy is essential for players seeking to optimize performance. The diversity of weapons ranging from pistols and rifles to shotguns and sniper rifles creates multiple layers of decision making during gameplay. Each guns unique attributes influence their effectiveness in various situations, and decisions on whether to save or invest in weapons during a round can determine the outcome of a match. The objective of this study is to compare how different weapon types dictate their price point, as well as how worth it a gun is in relate to its damage dealt at different distances. 
+
+![loadout](https://oyster.ignimgs.com/mediawiki/apis.ign.com/valorant/3/3b/What_to_buy.png?width=814.png)
+
+# Data
+The dataset I decided to use was found on [kaggle](https://www.kaggle.com/datasets/aadhavvignesh/valorant-weapon-stats/data) (@kaggleValorantWeapon). This csv file contained information about 17 of the unique guns found in _Valorant_ with information regarding their weapon type, price, fire rate, wall penetration, magazine capacity, as well as head damage, body damage, and leg damage from close, medium, and far range. The inclusion criteria is the details found from hovering the stats of each gun, not including run speed, equip speed, 1st shot accuracy, and reload speed which aren't as important in the context of this study. A current limitation is that this dataset does not contain information about the newest gun, the outlaw which was recently released. I also referenced data found in @kaggleValorantWeaponAnalysis for my analysis. 
+
+# Analysis and Results
+
+There are a total of 17 guns in the game, with 6 different weapon types. There are `r sum(val$Weapon_Type == "Sidearm")` sidearms, `r sum(val$Weapon_Type == "SMG")` submachine guns, `r sum(val$Weapon_Type == "Rifle")` rifles, `r sum(val$Weapon_Type == "Sniper")` snipers, `r sum(val$Weapon_Type == "Shotgun")` shotguns, and `r sum(val$Weapon_Type == "Heavy")` heavy/machine guns. 
+
+### The average price of each type of gun is listed below.
+```{r prices, collapse=TRUE}
+average_price <- tapply(val$Price, val$Weapon_Type, mean)
+
+print(average_price)
+
+```
+
+### This is a barplot used to showcase the average price as well as the mean line
+```{r price, collapse=TRUE}
+bar_positions <- barplot(average_price,
+     type = "o",
+     main = "Average Price of Each Weapon Type",
+     xlab = "Weapon Type",
+     ylab = "Average Price",
+     col = "red",
+     ylim = c(0, max(average_price) + 500),
+     xaxt = "n",
+     space = 0.5)
+
+axis(1, at = bar_positions, labels = names(average_price))
+abline(h = mean(average_price), col = "black", lty = 2)
+
+```
+
+### Damage Dropoff
+Now I want to represent how damage dropoff differs depending on the gun type. When a bullet hits head, body, and leg level respectively, there is a difference in the amount of damage dealt. Also when hit at a different range, there is potential for a range damage dropoff. 
+
+### This is representative of the average damage dealt at a close range
+```{r dmg_close, collapse=TRUE}
+avg_head_close <- tapply(val$HDMG_0, val$Weapon_Type, mean)
+avg_body_close <- tapply(val$BDMG_0, val$Weapon_Type, mean)
+avg_leg_close <- tapply(val$LDMG_0, val$Weapon_Type, mean)
+
+print(avg_head_close)
+print(avg_body_close)
+print(avg_leg_close)
+
+```
+
+### This is representative of the average damage dealt at a long range
+```{r dmg_far, collapse=TRUE}
+avg_head_long <- tapply(val$HDMG_2, val$Weapon_Type, mean)
+avg_body_long <- tapply(val$BDMG_2, val$Weapon_Type, mean)
+avg_leg_long <- tapply(val$LDMG_2, val$Weapon_Type, mean)
+
+print(avg_head_long)
+print(avg_body_long)
+print(avg_leg_long)
+
+```
+
+### Barplot of Damage Outputs
+```{r dmg, collapse=TRUE}
+damage_matrix <- rbind(
+  Head_Close = avg_head_close,
+  Body_Close = avg_body_close,
+  Leg_Close = avg_leg_close,
+  Head_Long = avg_head_long,
+  Body_Long = avg_body_long,
+  Leg_Long = avg_leg_long
+)
+
+print(damage_matrix)
+
+bar_colors <- c("red", "purple", "yellow", "orange", "blue", "green")
+
+bar_positions <- barplot(damage_matrix,
+                         beside = TRUE,  
+                         col = bar_colors,
+                         main = "Average Damage Comparison",
+                         xlab = "Weapon Type",
+                         ylab = "Average Damage",
+                         ylim = c(0, max(damage_matrix) + 50),
+                         las = 1)
+
+weapon_types <- rownames(val$Weapon_Type)
+axis(1, at = bar_positions[0, ], labels = weapon_types, las = 2)  
+
+legend("topleft", legend = c("Head Close", "Body Close", "Leg Close", "Head Long", "Body Long", "Leg Long"), 
+       fill = bar_colors, 
+       title = "Damage Type")
+```
+
+From this data we can tell that there is a clear difference in the damage output of a headshot vs any other shot on the body. The **average headshot damage** at close range is `r mean(avg_head_close)`, while the average **body shot damage** is `r mean(avg_body_close)`, and the **leg shot damage** is `r mean(avg_leg_close)`. Similarly, at long range, the average **headshot damage** is `r mean(avg_head_long)`, compared to body shots at `r mean(avg_body_long)` and leg shots at `r mean(avg_leg_long)`.
+
+However there is not much distinction when comparing the damage dropoff at a larger distance. While there is indeed a difference, it is not as extreme. 
+
+
+# Conclusion
+So the goal of this Project was to compare the different price points of the different weapon types and test damage done at different parts of the body at long and short range. In order to do this, I had to code for finding the average price of each gun type, including `r paste(unique(val$Weapon_Type), collapse = ", ")`. I also graphed this in the barplot \@ref(fig:price). In order to discuss damage dropoff, I frst had to find the average of a headshot, body shot, and leg shot at close range as well as long range. This was compiled into a matrix before being graphed into a barplot as well at \@ref(fig:dmg).From the results we can easily tell that hitting a headshot is ideal in _Valorant_ because it does much more damage than hitting any other part of the body. We can also see that different weapons types will affect how much damage it does in comparison to each other, with the sniper doing the most damage in general. This data gives a lot of insight on what guns are the most beneficial to use. 
+
+# Works Cited
+
